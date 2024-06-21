@@ -1,0 +1,95 @@
+// This file is the parent style-sheet imported by the app.
+// It is best to define styles for standard html elements here.
+@use "./reset.scss";
+@use "./primefaces.scss";
+@use "./dynamic.scss";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+// Tailwind breakpoints
+$sm:	 640px;	
+$md: 	 768px;	
+$lg:	1024px;
+$xl:	1280px;
+$xxl:	1536px;
+
+// Theme colors
+$bg-ancillary: #181818;
+$bg-content: #1F1F1F;
+$fg-font-5: #3a3a3a;
+$fg-font-4: #636363;
+$fg-font-3: #bdbbbb;
+$fg-font-1: #f4f4f4;
+$fg-border: #2B2B2B;
+$bg-accent-neutral: #0078D4;
+$bg-accent-hover: #0f65a7;
+$bg-accent-active: #1c91eb;
+
+
+
+[style-theme="dark"] {
+  --bg-ancillary: #181818;
+  --bg-content: #1F1F1F;
+  --fg-font-1: #f4f4f4;
+  --fg-border: #2B2B2B;
+}
+
+// [style-theme="light"] {
+//   --bg-ancillary: #c0bca2;
+//   --bg-content: #fdfedb;
+//   --fg-font: #121416;
+//   --fg-border: orange;//#2B2B2B;
+// }
+
+html {
+  @apply h-full;
+  background-color: var(--bg-ancillary);
+  color: var(--fg-font-1);
+}
+
+body {
+  @apply h-full;
+}
+
+#app {  
+  @apply h-full;
+}
+
+.bordered{
+  border: 1px $fg-border solid;
+  outline: 1px $fg-border solid;
+}
+
+// TOOLBOX MENU
+
+.drawer-title{
+  @apply mb-2;
+  font-variant: small-caps;
+}
+.toolbox-drawer-wrapper{
+  @apply p-3 text-xs;  
+  height: 100%;
+  width: 100%;  
+}
+
+input{
+  padding:2px;
+  width: 100%;  
+  background-color: $bg-content;
+}
+
+
+.drawer-link-list{
+  a{
+    @apply text-sm;
+    color:#1c91eb;
+  }
+  a:hover{
+    color:white;
+  }
+  a:active{
+    color:yellow;
+  }
+}

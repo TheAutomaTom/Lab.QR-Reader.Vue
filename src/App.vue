@@ -1,91 +1,66 @@
 <script setup lang="ts">
-import Header from "@Components/Body/Header.vue";
-import { useAppState } from "./State/AppState";
+import { QrcodeStream } from 'vue-qrcode-reader'
+import { ScannerInput } from "./Models/ScannerInput";
+import { ref } from "vue";
 
-const app$ = useAppState();
+const cameraIsLoading = ref(true);
 
-const getDrawerClass = () => {
-  console.log(app$.Layout.DrawerIsOpen ? 'drawer-open' : 'drawer-shut');
-  return app$.Layout.DrawerIsOpen ? 'drawer-open' : 'drawer-shut';
+let nextId = 1;
+const codes = ref( {} as ScannerInput );
+
+const onCameraReady = () =>{
+  console.error("onCameraReady");
+  cameraIsLoading.value = false;
 }
-</script>
 
-<template>
-  <!--==== Drawer =======================================================-->
-  <div 
-    class="drawer"
-    :class="getDrawerClass()"
-  >
+const onDetect = (detectedCodes:ScannerInput[]) =>{
+  console.warn("Input received");
 
-    <div class="drawer-header">
-      <button 
-        class="flex-button"
-        @click="app$.Layout.ToggleDrawer()"
-        >👈
-          <!-- 
-          <img 
-            src="../public/branding/logo-wide.png"
-            style="height:100%"
-          />  -->
-      </button>
-    </div>
+  detectedCodes.forEach(code => {
 
-    <div class="drawer-content">
-      <button class="drawer-button"><span>🫵 One</span></button>
-      <button class="drawer-button"><span>🫡 Two</span></button>
-      <button class="drawer-button"><span>🎼 Three</span></button>
-      <button class="drawer-button"><span>🎠 Four</span></button>
-    </div>
-
-  </div>
-
-  <!--==== App-Container ================================================-->
-  <div id="root" class="app-container">
-
-    <!--==== Header Ad ==================================================-->
-    <div style="grid-row:1;grid-column:2/5">
-    <!-- ;background-color: purple;"> -->
-    </div>
-
-    <div style="grid-row:1/6;grid-column:1;">
-    <!-- ;background-color: magenta;"> -->
-    </div>
-
-    <div style="grid-row:2/5;grid-column:2">
-    <!-- ;background-color: blue;"> -->
-    </div>
+    const toAdd = {
+      id: nextId++, 
+      format:code.format, 
+      rawValue:code.rawValue
+    } as ScannerInput
     
-    <!--==== Header =====================================================-->
-    <Header></Header>
+    codes.value = toAdd;
 
+
+
+  });
+
+}
+
+</script>
+<template>
+  <div id="root" class="app-container">
     <!--==== Content ====================================================-->
 
-    <div class="content-wrapper debug-border">
+    <div class="content-wrapper">
+      
+      <div v-if="cameraIsLoading">Preparing Camera...</div>
 
-      <div>Content</div>
+      <QrcodeStream 
+        @detect="onDetect"
+        @camera-on="onCameraReady"
+      />
+
+      <table v-if="codes.id > 0">
+        <tr>
+          <th style="width:3em">Id</th>
+          <th style="width:5em">Format</th>
+          <th style="width:100%">Value</th>
+        </tr>
+        <tr>
+          <td>{{ codes.id }}</td>
+          <td>{{ codes.format }}</td>
+          <td>{{ codes.rawValue }}</td>
+        </tr>
+      </table>
 
     </div>
-    
-    <!--==== ======= ====================================================-->
-
-    <div style="grid-row:4;grid-column:3/4">
-    <!-- ;background-color: lightblue;"> -->
-    </div>
-
-    <div style="grid-row:2/5;grid-column:4">
-    <!-- ;background-color: blue;"> -->
-    </div>
-
-    <div style="grid-row:1/6;grid-column:5">
-    <!-- ;background-color: magenta;"> -->
-    </div>
-
-    <!--==== Footer Ad ==================================================-->
-    <div style="grid-row:5;grid-column:2/5;background-color: purple;">
-    </div>
-
   </div>
-
 </template>
 
 <style scoped lang="scss">
@@ -93,6 +68,18 @@ const getDrawerClass = () => {
 // .debug-border{
 //   border:1px dotted grey;
 // }
+
+table, th, td {
+  background-color: black;
+  border: 1px solid darkgreen;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 5px;
+}
+th {
+  text-align: left;
+}
 
 .app-container {
   height: 100vh;
@@ -111,9 +98,8 @@ const getDrawerClass = () => {
   grid-row:3/4;
   grid-column:3;
   
-  @apply w-full flex justify-center;
-
-
+  color: greenyellow;
+  margin:auto;
 }
 
 .drawer{

@@ -1,5 +1,4 @@
-# Shogi Time
-
+# QR Reader Demo
 ## References
 
-- https://tailwindcss.com/docs/guides/vite
+- https://github.com/gruhn/vue-qrcode-reader

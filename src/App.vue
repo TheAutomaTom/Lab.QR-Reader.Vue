@@ -1,16 +1,167 @@
+<template>
+  <div id="root" class="app-container">
+    <!--==== Content ====================================================-->
+
+    <div class="content-wrapper">
+      
+      <div v-if="cameraIsReady">Camera access required...</div>
+
+      <QrcodeStream 
+        :track="trackFunctionSelected.value"
+        @detect="onDetect"
+        @camera-on="onCameraOn"
+        @camera-off="onCameraOff"
+        @error="onError"
+      >
+      </QrcodeStream>
+
+      <!--==== Scan Results  ====================================================-->
+      <table v-if="codes.id > 0">
+        <tr>
+          <th style="width:3em">Id</th>
+          <th style="width:5em">Format</th>
+          <th style="width:100%">Value</th>
+        </tr>
+        <tr>
+          <td>{{ codes.id }}</td>
+          <td>{{ codes.format }}</td>
+          <td>{{ codes.rawValue }}</td>
+        </tr>
+      </table>
+
+      <!--==== Errors  ====================================================-->
+      <p 
+        v-for="e in errors" key="index"
+        v-if="errors.length > 0"
+        style="color:red;"
+      > {{ e }} </p> 
+ 
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { QrcodeStream } from 'vue-qrcode-reader'
 import { ScannerInput } from "./Models/ScannerInput";
 import { ref } from "vue";
+import { context } from "./Models/InputContext.ts";
+function paintOutline(detectedCodes:ScannerInput[], ctx:context) {
+  for (const detectedCode of detectedCodes) {
+    const [firstPoint, ...otherPoints] = detectedCode.cornerPoints
 
-const cameraIsLoading = ref(true);
+    ctx.strokeStyle = 'green';
+
+    ctx.beginPath()
+    ctx.moveTo(firstPoint.x, firstPoint.y)
+    for (const { x, y } of otherPoints) {
+      ctx.lineTo(x, y)
+    }
+    ctx.lineTo(firstPoint.x, firstPoint.y)
+    ctx.closePath()
+    ctx.stroke()
+  }
+}
+function paintBoundingBox(detectedCodes:ScannerInput[], ctx:context) {
+  for (const detectedCode of detectedCodes) {
+    const {
+      boundingBox: { x, y, width, height }
+    } = detectedCode
+
+    ctx.lineWidth = 2
+    ctx.strokeStyle = '#007bff'
+    ctx.strokeRect(x, y, width, height)
+  }
+}
+function paintCenterText(detectedCodes:ScannerInput[], ctx:context) {
+  for (const detectedCode of detectedCodes) {
+    const { boundingBox, rawValue } = detectedCode
+
+    const centerX = boundingBox.x + boundingBox.width / 2
+    const centerY = boundingBox.y + boundingBox.height / 2
+
+    const fontSize = Math.max(12, (50 * boundingBox.width) / ctx.canvas.width)
+
+    ctx.font = `bold ${fontSize}px sans-serif`
+    ctx.textAlign = 'center'
+
+    ctx.lineWidth = 3
+    ctx.strokeStyle = '#35495e'
+    ctx.strokeText(detectedCode.rawValue, centerX, centerY)
+
+    ctx.fillStyle = '#5cb984'
+    ctx.fillText(rawValue, centerX, centerY)
+  }
+}
+
+
+
+
+function paintCenterTextWithOutline(detectedCodes:ScannerInput[], ctx:context) {
+  for (const detectedCode of detectedCodes) {
+
+    const [firstPoint, ...otherPoints] = detectedCode.cornerPoints
+
+    ctx.strokeStyle = 'green';
+
+    ctx.beginPath()
+    ctx.moveTo(firstPoint.x, firstPoint.y)
+    for (const { x, y } of otherPoints) {
+      ctx.lineTo(x, y)
+    }
+    ctx.lineTo(firstPoint.x, firstPoint.y)
+    ctx.closePath()
+    ctx.stroke()
+
+    const { boundingBox, rawValue } = detectedCode
+
+    const centerX = boundingBox.x + boundingBox.width / 2
+    const centerY = boundingBox.y + boundingBox.height / 2
+
+    const fontSize = Math.max(12, (50 * boundingBox.width) / ctx.canvas.width)
+
+    ctx.font = `bold ${fontSize}px sans-serif`
+    ctx.textAlign = 'center'
+
+    ctx.lineWidth = 3
+    ctx.strokeStyle = '#35495e'
+    ctx.strokeText(detectedCode.rawValue, centerX, centerY)
+
+    ctx.fillStyle = '#5cb984'
+    ctx.fillText(rawValue, centerX, centerY)
+
+
+
+  }
+}
+
+
+
+
+const trackFunctionOptions = [
+  { text: 'nothing (default)', value: undefined },
+  { text: 'outline', value: paintOutline },
+  { text: 'centered text', value: paintCenterText },
+  { text: 'bounding box', value: paintBoundingBox },
+  { text: 'outline + text', value: paintCenterTextWithOutline }
+]
+const trackFunctionSelected = ref(trackFunctionOptions[4])
+
+const cameraIsReady = ref(true);
+const errors = ref({} as string[]);
 
 let nextId = 1;
 const codes = ref( {} as ScannerInput );
 
-const onCameraReady = () =>{
-  console.error("onCameraReady");
-  cameraIsLoading.value = false;
+const onCameraOn = () =>{
+  cameraIsReady.value = false;
+}
+
+const onCameraOff = () =>{
+  cameraIsReady.value = true;
+}
+
+const onError = (error:string) =>{
+  errors.value.push(error)
 }
 
 const onDetect = (detectedCodes:ScannerInput[]) =>{
@@ -26,48 +177,14 @@ const onDetect = (detectedCodes:ScannerInput[]) =>{
     
     codes.value = toAdd;
 
-
-
   });
-
 }
 
+
 </script>
-<template>
-  <div id="root" class="app-container">
-    <!--==== Content ====================================================-->
 
-    <div class="content-wrapper">
-      
-      <div v-if="cameraIsLoading">Preparing Camera...</div>
-
-      <QrcodeStream 
-        @detect="onDetect"
-        @camera-on="onCameraReady"
-      />
-
-      <table v-if="codes.id > 0">
-        <tr>
-          <th style="width:3em">Id</th>
-          <th style="width:5em">Format</th>
-          <th style="width:100%">Value</th>
-        </tr>
-        <tr>
-          <td>{{ codes.id }}</td>
-          <td>{{ codes.format }}</td>
-          <td>{{ codes.rawValue }}</td>
-        </tr>
-      </table>
-
-    </div>
-  </div>
-</template>
 
 <style scoped lang="scss">
-
-// .debug-border{
-//   border:1px dotted grey;
-// }
 
 table, th, td {
   background-color: black;
@@ -186,4 +303,6 @@ th {
     14px 5px 5px rgb(86, 23, 0),
 }
 
-</style>
+</style>import { context } from './Models/context';
+import { context } from './Models/context';
+
